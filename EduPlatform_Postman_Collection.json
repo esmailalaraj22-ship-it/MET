@@ -1,0 +1,1150 @@
+{
+  "info": {
+    "name": "Edu Platform API",
+    "description": "Arabic Educational Platform — Complete API Test Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "studentToken",
+      "value": ""
+    },
+    {
+      "key": "instructorToken",
+      "value": ""
+    },
+    {
+      "key": "universityId",
+      "value": ""
+    },
+    {
+      "key": "courseId",
+      "value": ""
+    },
+    {
+      "key": "instructorId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "lessonId",
+      "value": ""
+    },
+    {
+      "key": "examId",
+      "value": ""
+    },
+    {
+      "key": "assignmentId",
+      "value": ""
+    },
+    {
+      "key": "conversationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/../health"
+            },
+            "description": "Verify server is running"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('adminToken', pm.response.json().data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"admin1@edu.com\", \"password\": \"123456789\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login"
+            }
+          }
+        },
+        {
+          "name": "Get Universities (for registration)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/universities"
+            },
+            "description": "Public — no auth required"
+          }
+        },
+        {
+          "name": "Register Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('studentToken', pm.response.json().data.accessToken || ''); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"firstName\": \"\\u0645\\u062d\\u0645\\u062f\", \"secondName\": \"\\u0639\\u0628\\u062f\\u0627\\u0644\\u0644\\u0647\", \"familyName\": \"\\u0627\\u0644\\u0623\\u062d\\u0645\\u062f\\u064a\", \"email\": \"student_test@edu.com\", \"password\": \"pass123456\", \"confirmPassword\": \"pass123456\", \"universityId\": \"{{universityId}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register"
+            }
+          }
+        },
+        {
+          "name": "Student Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('studentToken', pm.response.json().data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"student_test@edu.com\", \"password\": \"pass123456\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login"
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"currentPassword\": \"123456789\", \"newPassword\": \"newPass123\", \"confirmNewPassword\": \"newPass123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password"
+            }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token"
+            },
+            "description": "Uses httpOnly cookie automatically"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Admin — Setup",
+      "item": [
+        {
+          "name": "Get Platform Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats"
+            }
+          }
+        },
+        {
+          "name": "Create University",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('universityId', pm.response.json().data.university._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"\\u062c\\u0627\\u0645\\u0639\\u0629 \\u0627\\u0644\\u0627\\u062e\\u062a\\u0628\\u0627\\u0631\", \"nameEn\": \"Test University\", \"city\": \"\\u0627\\u0644\\u0631\\u064a\\u0627\\u0636\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/universities"
+            }
+          }
+        },
+        {
+          "name": "Create Instructor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('instructorId', pm.response.json().data.instructor._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"firstName\": \"\\u0623\\u062d\\u0645\\u062f\", \"secondName\": \"\\u0645\\u062d\\u0645\\u062f\", \"familyName\": \"\\u0627\\u0644\\u0633\\u0639\\u064a\\u062f\", \"email\": \"instructor_test@edu.com\", \"password\": \"instPass123\", \"nationalId\": \"1234567890\", \"paypalAccount\": \"inst@paypal.com\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/instructors"
+            }
+          }
+        },
+        {
+          "name": "Create Course",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('courseId', pm.response.json().data.course._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\\u0643\\u0648\\u0631\\u0633 \\u062a\\u062c\\u0631\\u064a\\u0628\\u064a\", \"description\": \"\\u0648\\u0635\\u0641 \\u0627\\u0644\\u0643\\u0648\\u0631\\u0633\", \"instructorId\": \"{{instructorId}}\", \"allowedUniversities\": [\"{{universityId}}\"], \"metCost\": 50, \"instructorPercentage\": 40, \"reservedPercentage\": 20, \"level\": \"beginner\", \"category\": \"programming\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/courses"
+            }
+          }
+        },
+        {
+          "name": "Assign Instructor to Course",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"instructorId\": \"{{instructorId}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/courses/{{courseId}}/assign-instructor"
+            }
+          }
+        },
+        {
+          "name": "Add MET to Student",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\": 100, \"description\": \"\\u0645\\u0646\\u062d\\u0629 \\u062a\\u0639\\u0644\\u064a\\u0645\\u064a\\u0629\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/students/{{studentId}}/met"
+            }
+          }
+        },
+        {
+          "name": "Apply Discount to Student",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"percentage\", \"value\": 20}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/students/{{studentId}}/discount"
+            }
+          }
+        },
+        {
+          "name": "Release Instructor Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\": 100, \"note\": \"\\u062f\\u0641\\u0639\\u0629 \\u0634\\u0647\\u0631 \\u0645\\u0627\\u0631\\u0633\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/finance/instructors/{{instructorId}}/release"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Instructor",
+      "item": [
+        {
+          "name": "Instructor Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('instructorToken', pm.response.json().data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"instructor_test@edu.com\", \"password\": \"instPass123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login"
+            }
+          }
+        },
+        {
+          "name": "Instructor Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructor/dashboard"
+            }
+          }
+        },
+        {
+          "name": "Instructor Finance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructor/finance"
+            }
+          }
+        },
+        {
+          "name": "Create Lesson",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('lessonId', pm.response.json().data.lesson._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\\u0645\\u0642\\u062f\\u0645\\u0629 \\u0641\\u064a \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u0629\", \"videoUrl\": \"https://example.com/video.mp4\", \"duration\": 1800, \"isPublished\": true}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/lessons"
+            }
+          }
+        },
+        {
+          "name": "Create Assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('assignmentId', pm.response.json().data.assignment._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\\u0648\\u0627\\u062c\\u0628 \\u0627\\u0644\\u0623\\u0633\\u0628\\u0648\\u0639 \\u0627\\u0644\\u0623\\u0648\\u0644\", \"description\": \"\\u0627\\u0643\\u062a\\u0628 \\u0628\\u0631\\u0646\\u0627\\u0645\\u062c Hello World\", \"submissionType\": \"any\", \"maxScore\": 100}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/assignments"
+            }
+          }
+        },
+        {
+          "name": "Create Exam (MCQ + Written)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('examId', pm.response.json().data.exam._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\\u0627\\u062e\\u062a\\u0628\\u0627\\u0631 \\u0627\\u0644\\u0641\\u0635\\u0644 \\u0627\\u0644\\u0623\\u0648\\u0644\", \"type\": \"quiz\", \"duration\": 30, \"passingScore\": 60, \"isPublished\": true, \"showGradesImmediately\": true, \"questions\": [{\"questionType\": \"mcq\", \"questionText\": \"\\u0645\\u0627 \\u0647\\u0648 \\u0646\\u0627\\u062a\\u062c 2+2\\u061f\", \"options\": [\"2\", \"3\", \"4\", \"5\"], \"correctAnswer\": 2, \"points\": 2}, {\"questionType\": \"written\", \"questionText\": \"\\u0627\\u0634\\u0631\\u062d \\u0645\\u0641\\u0647\\u0648\\u0645 \\u0627\\u0644\\u0645\\u062a\\u063a\\u064a\\u0631\\u0627\\u062a\", \"points\": 5}]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/exams"
+            }
+          }
+        },
+        {
+          "name": "Course Students List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/students"
+            }
+          }
+        },
+        {
+          "name": "Get Exam Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/exams/{{examId}}/results"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Student",
+      "item": [
+        {
+          "name": "Student Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/dashboard"
+            }
+          }
+        },
+        {
+          "name": "Browse Available Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/courses/available"
+            }
+          }
+        },
+        {
+          "name": "Enroll in Course (deducts MET)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/courses/{{courseId}}/enroll"
+            }
+          }
+        },
+        {
+          "name": "Get Course Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/courses/{{courseId}}/content"
+            }
+          }
+        },
+        {
+          "name": "Mark Lesson as Watched",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/progress/courses/{{courseId}}/lessons/{{lessonId}}"
+            }
+          }
+        },
+        {
+          "name": "Submit Assignment (text)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"submissionType\": \"text\", \"textAnswer\": \"\\u0647\\u0630\\u0627 \\u0647\\u0648 \\u062d\\u0644\\u064a \\u0644\\u0644\\u0648\\u0627\\u062c\\u0628...\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/assignments/{{assignmentId}}/submit"
+            }
+          }
+        },
+        {
+          "name": "Submit Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"timeTaken\": 600, \"answers\": [{\"mcqAnswer\": 2}, {\"writtenAnswer\": \"\\u0627\\u0644\\u0645\\u062a\\u063a\\u064a\\u0631 \\u0647\\u0648 \\u0645\\u0643\\u0627\\u0646 \\u0641\\u064a \\u0627\\u0644\\u0630\\u0627\\u0643\\u0631\\u0629 \\u0644\\u062a\\u062e\\u0632\\u064a\\u0646 \\u0642\\u064a\\u0645\\u0629\"}]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/exams/{{examId}}/submit"
+            }
+          }
+        },
+        {
+          "name": "Get My Exam Result",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/exams/{{examId}}/my-result"
+            }
+          }
+        },
+        {
+          "name": "Get Progress Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/progress/overview"
+            }
+          }
+        },
+        {
+          "name": "MET Points History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/met/history"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Community",
+      "item": [
+        {
+          "name": "General Community — Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\": \"\\u0645\\u0631\\u062d\\u0628\\u0627\\u064b \\u0628\\u0627\\u0644\\u062c\\u0645\\u064a\\u0639 \\u0641\\u064a \\u0627\\u0644\\u0645\\u0646\\u0635\\u0629!\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community/posts"
+            }
+          }
+        },
+        {
+          "name": "General Community — Get Posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/community/posts?page=1&limit=10"
+            }
+          }
+        },
+        {
+          "name": "Course Community — Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\": \"\\u0633\\u0624\\u0627\\u0644 \\u0639\\u0646 \\u0627\\u0644\\u062f\\u0631\\u0633 \\u0627\\u0644\\u0623\\u0648\\u0644\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community/courses/{{courseId}}/posts"
+            }
+          }
+        },
+        {
+          "name": "Course Community — Get Posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/community/courses/{{courseId}}/posts"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Chat",
+      "item": [
+        {
+          "name": "Get Chat Instructors Sidebar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/chat/instructors"
+            }
+          }
+        },
+        {
+          "name": "Start Conversation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('conversationId', pm.response.json().data.conversation._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"targetUserId\": \"INSTRUCTOR_USER_ID\", \"courseId\": \"{{courseId}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat"
+            }
+          }
+        },
+        {
+          "name": "Get My Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat"
+            }
+          }
+        },
+        {
+          "name": "Send Message (HTTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\": \"\\u0623\\u0633\\u062a\\u0627\\u0630\\u060c \\u0644\\u062f\\u064a \\u0633\\u0624\\u0627\\u0644 \\u0639\\u0646 \\u0627\\u0644\\u062f\\u0631\\u0633\", \"type\": \"text\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat/{{conversationId}}/messages"
+            }
+          }
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/{{conversationId}}/messages?page=1&limit=20"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?unread=true"
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all"
+            }
+          }
+        },
+        {
+          "name": "Admin Broadcast Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"system\", \"title\": \"\\u0625\\u0639\\u0644\\u0627\\u0646 \\u0647\\u0627\\u0645\", \"body\": \"\\u0633\\u064a\\u062a\\u0645 \\u0635\\u064a\\u0627\\u0646\\u0629 \\u0627\\u0644\\u0645\\u0646\\u0635\\u0629 \\u063a\\u062f\\u0627\\u064b\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/broadcast"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Error & Edge Cases",
+      "item": [
+        {
+          "name": "[401] Access without token",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats"
+            },
+            "description": "Expected: 401 Unauthorized"
+          }
+        },
+        {
+          "name": "[403] Student accessing admin route",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats"
+            },
+            "description": "Expected: 403 Forbidden"
+          }
+        },
+        {
+          "name": "[409] Enroll twice in same course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/student/courses/{{courseId}}/enroll"
+            },
+            "description": "Expected: 409 Conflict"
+          }
+        },
+        {
+          "name": "[400] Register with mismatched passwords",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"firstName\": \"Test\", \"secondName\": \"Test\", \"familyName\": \"Test\", \"email\": \"test@test.com\", \"password\": \"abc123\", \"confirmPassword\": \"DIFFERENT\", \"universityId\": \"{{universityId}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register"
+            },
+            "description": "Expected: 400 Bad Request"
+          }
+        },
+        {
+          "name": "[400] Submit exam after deadline",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answers\": [{\"mcqAnswer\": 0}], \"timeTaken\": 100}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/exams/EXPIRED_EXAM_ID/submit"
+            },
+            "description": "Expected: 400 — انتهى وقت تقديم هذا الاختبار"
+          }
+        }
+      ]
+    }
+  ]
+}

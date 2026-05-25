@@ -1,27 +1,23 @@
 require("express-async-errors");
-const express       = require("express");
-const helmet        = require("helmet");
-const cors          = require("cors");
-const morgan        = require("morgan");
+const express = require("express");
+const helmet = require("helmet");
+const cors = require("cors");
+const morgan = require("morgan");
 const mongoSanitize = require("express-mongo-sanitize");
-const cookieParser  = require("cookie-parser");
+const cookieParser = require("cookie-parser");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 
 const { errorHandler, notFound } = require("./middlewares/error.middleware");
-const { generalLimiter }         = require("./middlewares/rateLimiter.middleware");
-const routes                     = require("./routes/index");
+const { generalLimiter } = require("./middlewares/rateLimiter.middleware");
+const routes = require("./routes/index");
 
 const app = express();
 
 // ── Security ──────────────────────────────────────────────
-app.use(helmet());
-
-// Prevent NoSQL injection: strips $ and . from user input
+app.use(helmet({ contentSecurityPolicy: false })); // false needed for Swagger UI
 app.use(mongoSanitize());
-
-app.use(cors({
-  origin:      process.env.CLIENT_URL || "*",
-  credentials: true,
-}));
+app.use(cors({ origin: process.env.CLIENT_URL || "*", credentials: true }));
 
 // ── Body Parsing ──────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
@@ -36,21 +32,46 @@ if (process.env.NODE_ENV === "development") {
 // ── Rate Limiting ─────────────────────────────────────────
 app.use("/api", generalLimiter);
 
-// ── Routes ────────────────────────────────────────────────
+// ── Swagger UI ────────────────────────────────────────────
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "منصة التعليم العربية — API Docs",
+    customCss: ".swagger-ui .topbar { background-color: #1a1a2e; }",
+    swaggerOptions: {
+      persistAuthorization: true, // يحتفظ بالـ Token بعد الإغلاق
+    },
+  }),
+);
+
+// ── Root ──────────────────────────────────────────────────
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "🎓 منصة التعليم العربية — API",
+    version: "1.0.0",
+    docs: "/api-docs",
+    health: "/health",
+    api: "/api/v1",
+  });
+});
+
+// ── API Routes ────────────────────────────────────────────
 app.use("/api/v1", routes);
 
 // ── Health Check ──────────────────────────────────────────
 app.get("/health", (req, res) => {
   res.status(200).json({
-    status:  "success",
+    status: "success",
     message: "Server is running",
-    env:     process.env.NODE_ENV,
+    env: process.env.NODE_ENV,
     version: "1.0.0",
-    time:    new Date().toISOString(),
+    time: new Date().toISOString(),
   });
 });
 
-// ── Error Handlers (must be last) ────────────────────────
+// ── Error Handlers ────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 

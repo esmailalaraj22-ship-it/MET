@@ -75,6 +75,7 @@ const getExamById = async (userId, userRole, courseId, examId) => {
 
 // ── SUBMIT (CRITICAL: updates progress) ──────────────────
 const submitExam = async (userId, courseId, examId, answers, timeTaken = 0) => {
+  if (!Array.isArray(answers)) answers = [];
   const student = await Student.findOne({ userId });
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 

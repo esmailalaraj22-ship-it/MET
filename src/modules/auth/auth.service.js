@@ -29,10 +29,17 @@ const registerStudent = async (data) => {
   });
 
   // 4. Create student profile linked to university
-  const student = await Student.create({
-    userId: user._id,
-    universityId: university._id,
-  });
+  // If this fails, remove the user so no orphan account can log in
+  let student;
+  try {
+    student = await Student.create({
+      userId: user._id,
+      universityId: university._id,
+    });
+  } catch (err) {
+    await User.findByIdAndDelete(user._id);
+    throw err;
+  }
 
   return { user, student, university };
 };

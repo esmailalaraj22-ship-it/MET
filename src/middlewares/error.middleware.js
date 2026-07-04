@@ -24,6 +24,16 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === "JsonWebTokenError") error = new ApiError(401, "رمز المصادقة غير صالح");
   if (err.name === "TokenExpiredError") error = new ApiError(401, "انتهت صلاحية رمز المصادقة");
 
+  // Multer upload errors (file too large, unexpected field, ...)
+  if (err.name === "MulterError") {
+    error = new ApiError(
+      400,
+      err.code === "LIMIT_FILE_SIZE"
+        ? "حجم الملف يتجاوز الحد المسموح"
+        : `خطأ في رفع الملف: ${err.message}`
+    );
+  }
+
   const statusCode = error.statusCode || 500;
 
   return res.status(statusCode).json({

@@ -129,6 +129,10 @@ const enrollInCourse = async (userId, courseId) => {
     throw new ApiError(400, `نقاط MET غير كافية. تحتاج ${finalCost} MET، لديك ${student.metPoints} MET فقط`);
   }
 
+  // Create enrollment FIRST — the unique index (studentId, courseId) rejects
+  // duplicates, so a concurrent double-request can never deduct MET twice
+  await Enrollment.create({ studentId: student._id, courseId });
+
   // Deduct MET from student
   student.metPoints -= finalCost;
   student.metTransactions.push({
@@ -138,9 +142,6 @@ const enrollInCourse = async (userId, courseId) => {
     courseId:    course._id,
   });
   await student.save();
-
-  // Create enrollment
-  await Enrollment.create({ studentId: student._id, courseId });
   await Progress.findOneAndUpdate(
     { studentId: student._id, courseId },
     {

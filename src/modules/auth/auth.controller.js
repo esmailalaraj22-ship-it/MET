@@ -28,15 +28,19 @@ const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await authService.loginUser(email, password);
 
   // Store refresh token as httpOnly cookie
+  // sameSite "none" is required so the cookie is sent when the frontend
+  // lives on a different domain (e.g. Vercel → Render); "none" needs secure
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure:   process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge:   30 * 24 * 60 * 60 * 1000,
   });
 
   return ApiResponse.success(res, 200, "تم تسجيل الدخول بنجاح", {
     accessToken,
+    // also returned in the body so the frontend can use it if cookies are blocked
+    refreshToken,
     user: {
       id:           user._id,
       fullName:     user.fullName,
@@ -61,7 +65,12 @@ const refreshToken = asyncHandler(async (req, res) => {
 // @access Protected
 const logout = asyncHandler(async (req, res) => {
   await authService.logoutUser(req.user._id);
-  res.clearCookie("refreshToken");
+  // must match the options used when the cookie was set, otherwise browsers keep it
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
   return ApiResponse.success(res, 200, "تم تسجيل الخروج بنجاح");
 });
 

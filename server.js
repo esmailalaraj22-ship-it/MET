@@ -16,7 +16,7 @@ const startServer = async () => {
 
   // 3. Attach Socket.IO
   const io = new Server(server, {
-    cors: { origin: process.env.CLIENT_URL || "*", credentials: true },
+    cors: { origin: process.env.CLIENT_URL || true, credentials: true },
     // Increase ping timeout for slower mobile connections
     pingTimeout: 60000,
   });

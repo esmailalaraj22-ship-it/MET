@@ -15,10 +15,19 @@ const routes = require("./routes/index");
 
 const app = express();
 
+// Render runs the app behind a proxy — required for rate-limit and secure cookies
+app.set("trust proxy", 1);
+
 // ── Security ──────────────────────────────────────────────
-app.use(helmet({ contentSecurityPolicy: false })); // false needed for Swagger UI
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // needed for Swagger UI
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // allow frontend to load /uploads videos
+  })
+);
 app.use(mongoSanitize());
-app.use(cors({ origin: process.env.CLIENT_URL || "*", credentials: true }));
+// origin:true reflects the request origin — works with credentials from any frontend domain
+app.use(cors({ origin: process.env.CLIENT_URL || true, credentials: true }));
 
 // ── Body Parsing ──────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));

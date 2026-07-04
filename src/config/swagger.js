@@ -183,6 +183,29 @@ const options = {
           },
         },
       },
+      "/student/courses/{courseId}/drop": {
+        delete: {
+          tags: ["Student"],
+          summary: "الانسحاب من كورس (استرداد كامل للنقاط خلال 48 ساعة من التسجيل)",
+          description:
+            "خلال 48 ساعة من التسجيل: انسحاب مع استرداد كامل للنقاط وخصم حصة المدرس. " +
+            "بعد 48 ساعة: يرجع 400 مع تحذير REFUND_WINDOW_EXPIRED — أعد الطلب مع confirm=true للانسحاب بدون استرداد. " +
+            "في الحالتين يصل إشعار للمدرس المسؤول.",
+          parameters: [
+            { name: "courseId", in: "path", required: true, schema: { type: "string" } },
+            {
+              name: "confirm", in: "query", required: false,
+              schema: { type: "boolean", example: true },
+              description: "أرسل true لتأكيد الانسحاب بدون استرداد بعد انقضاء المهلة",
+            },
+          ],
+          responses: {
+            200: { description: "تم الانسحاب — يحتوي refunded و refundedAmount" },
+            400: { description: "انقضت مهلة الاسترداد (يتطلب confirm=true)" },
+            404: { description: "غير مسجل في هذا الكورس" },
+          },
+        },
+      },
       "/student/courses/{courseId}/content": {
         get: {
           tags: ["Student"],

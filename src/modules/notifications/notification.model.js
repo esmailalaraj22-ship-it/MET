@@ -18,6 +18,7 @@ const notificationSchema = new mongoose.Schema(
         "comment_reply",
         "message",
         "course_update",
+        "student_dropped",
         "system",
       ],
       required: true,

@@ -17,6 +17,9 @@ const enrollmentSchema = new mongoose.Schema(
       enum: ["active", "completed", "dropped"],
       default: "active",
     },
+    // Actual MET paid at enrollment (after discount) — the exact amount
+    // refunded on withdrawal; course price changes must not affect refunds
+    metPaid:     { type: Number, default: null },
     enrolledAt:  { type: Date, default: Date.now },
     completedAt: { type: Date, default: null },
   },

@@ -19,8 +19,9 @@ const enrollInCourse      = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 201, result.message, result);
 });
 const dropCourse          = asyncHandler(async (req, res) => {
-  await service.dropCourse(req.user._id, req.params.courseId);
-  return ApiResponse.success(res, 200, "تم الانسحاب من الكورس بنجاح");
+  const confirmNoRefund = req.query.confirm === "true" || req.body?.confirm === true;
+  const result = await service.dropCourse(req.user._id, req.params.courseId, confirmNoRefund);
+  return ApiResponse.success(res, 200, result.message, result);
 });
 const getCourseContent    = asyncHandler(async (req, res) => {
   const data = await service.getCourseContent(req.user._id, req.params.courseId);

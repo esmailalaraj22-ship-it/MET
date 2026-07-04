@@ -131,7 +131,7 @@ const enrollInCourse = async (userId, courseId) => {
 
   // Create enrollment FIRST — the unique index (studentId, courseId) rejects
   // duplicates, so a concurrent double-request can never deduct MET twice
-  await Enrollment.create({ studentId: student._id, courseId });
+  await Enrollment.create({ studentId: student._id, courseId, metPaid: finalCost });
 
   // Deduct MET from student
   student.metPoints -= finalCost;
@@ -195,18 +195,122 @@ const enrollInCourse = async (userId, courseId) => {
   };
 };
 
-// ── DROP COURSE (MET refund partial) ─────────────────────
-const dropCourse = async (userId, courseId) => {
+// ── DROP COURSE (full MET refund within 48h of enrollment) ──
+const REFUND_WINDOW_HOURS = 48;
+
+const dropCourse = async (userId, courseId, confirmNoRefund = false) => {
   const student    = await Student.findOne({ userId });
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
   const enrollment = await Enrollment.findOne({ studentId: student._id, courseId });
   if (!enrollment) throw new ApiError(404, "أنت غير مسجل في هذا الكورس");
 
+  const course = await Course.findById(courseId);
+  if (!course) throw new ApiError(404, "الكورس غير موجود");
+
+  // Amount actually paid — for enrollments created before metPaid existed,
+  // fall back to the debit recorded in the student's MET transaction log
+  let paidAmount = enrollment.metPaid;
+  if (paidAmount == null) {
+    const debitTx = [...student.metTransactions]
+      .reverse()
+      .find((t) => t.type === "debit" && t.courseId?.toString() === courseId.toString());
+    paidAmount = debitTx ? Math.abs(debitTx.amount) : 0;
+  }
+
+  const hoursSinceEnrollment =
+    (Date.now() - new Date(enrollment.enrolledAt).getTime()) / (1000 * 60 * 60);
+  const refundable = hoursSinceEnrollment <= REFUND_WINDOW_HOURS && paidAmount > 0;
+
+  // Refund window expired: warn and require explicit confirmation before
+  // withdrawing without a refund (frontend re-sends with confirm=true)
+  if (!refundable && paidAmount > 0 && !confirmNoRefund) {
+    throw new ApiError(
+      400,
+      `تنبيه: انقضت مهلة الاسترداد (${REFUND_WINDOW_HOURS} ساعة من وقت التسجيل). في حال الانسحاب الآن لن تسترد نقاطك (${paidAmount} MET). لتأكيد الانسحاب بدون استرداد أعد الطلب مع confirm=true`,
+      ["REFUND_WINDOW_EXPIRED"]
+    );
+  }
+
   await enrollment.deleteOne();
   await Progress.findOneAndDelete({ studentId: student._id, courseId });
   await Student.findByIdAndUpdate(student._id, { $pull: { enrolledCourses: courseId } });
   await Course.findByIdAndUpdate(courseId, { $inc: { enrolledCount: -1 } });
+
+  if (refundable) {
+    // Refund the student
+    await Student.findByIdAndUpdate(student._id, {
+      $inc:  { metPoints: paidAmount },
+      $push: {
+        metTransactions: {
+          amount:      paidAmount,
+          type:        "refund",
+          description: `استرداد نقاط الانسحاب من كورس: ${course.title}`,
+          courseId:    course._id,
+        },
+      },
+    });
+
+    // Reverse platform income with the same formulas used at enrollment
+    const reservedAmount = Math.round(paidAmount * (course.reservedPercentage / 100));
+    await Course.findByIdAndUpdate(courseId, {
+      $inc: { totalIncome: -paidAmount, totalReserved: -reservedAmount },
+    });
+
+    // Reverse the instructor's share
+    if (course.instructorId) {
+      const instructorEarning = Math.round(paidAmount * (course.instructorPercentage / 100));
+      await InstructorFinance.findOneAndUpdate(
+        { instructorId: course.instructorId },
+        {
+          $inc: { totalEarned: -instructorEarning, totalReserved: -reservedAmount },
+          $push: {
+            transactions: {
+              courseId:    course._id,
+              courseTitle: course.title,
+              amount:      -instructorEarning,
+              amountUSD:   -instructorEarning * MET_TO_USD,
+              type:        "cancelled",
+              note:        "انسحاب طالب خلال مهلة الاسترداد (48 ساعة)",
+            },
+          },
+        },
+        { upsert: true }
+      );
+    }
+  }
+
+  // Notify the course instructor about the withdrawal (refunded or not)
+  if (course.instructorId) {
+    const { notifyUser } = require("../../utils/notificationHelper");
+    const instructor = await Instructor.findById(course.instructorId).select("userId");
+    if (instructor?.userId) {
+      const studentUser = await User.findById(userId).select("firstName familyName");
+      const studentName = studentUser
+        ? `${studentUser.firstName} ${studentUser.familyName}`
+        : "أحد الطلاب";
+      await notifyUser(
+        instructor.userId,
+        "student_dropped",
+        "انسحاب طالب من الكورس",
+        refundable
+          ? `انسحب الطالب ${studentName} من كورس "${course.title}" خلال مهلة الاسترداد — استُردت نقاطه (${paidAmount} MET) وتم خصم حصتك من أرباح هذا التسجيل`
+          : `انسحب الطالب ${studentName} من كورس "${course.title}" بعد انتهاء مهلة الاسترداد — لم تُسترد النقاط وأرباحك لم تتأثر`,
+        course._id,
+        "Course"
+      );
+    }
+  }
+
+  return {
+    refunded:       refundable,
+    refundedAmount: refundable ? paidAmount : 0,
+    message: refundable
+      ? `تم الانسحاب من الكورس واسترداد ${paidAmount} MET إلى رصيدك`
+      : paidAmount > 0
+        ? "تم الانسحاب من الكورس بدون استرداد النقاط (انقضت مهلة الاسترداد)"
+        : "تم الانسحاب من الكورس بنجاح",
+  };
 };
 
 // ── COURSE CONTENT ────────────────────────────────────────

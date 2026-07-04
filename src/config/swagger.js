@@ -434,12 +434,14 @@ const options = {
           requestBody: {
             required: true,
             content: {
-              "application/json": {
+              "multipart/form-data": {
                 schema: {
                   type: "object",
+                  required: ["title", "video"],
                   properties: {
                     title:       { type: "string", example: "الدرس الأول" },
-                    videoUrl:    { type: "string", example: "https://example.com/v.mp4" },
+                    video:       { type: "string", format: "binary", description: "MP4, MPEG, MOV or WEBM — max 500 MB" },
+                    description: { type: "string" },
                     duration:    { type: "number", example: 1800 },
                     order:       { type: "number", example: 1 },
                     isPublished: { type: "boolean", example: true },
@@ -448,7 +450,10 @@ const options = {
               },
             },
           },
-          responses: { 201: { description: "تم إضافة الدرس + إشعار للطلاب" } },
+          responses: {
+            201: { description: "تم رفع الفيديو وإضافة الدرس + إشعار للطلاب" },
+            400: { description: "ملف الفيديو مفقود أو نوعه غير مدعوم" },
+          },
         },
       },
       "/courses/{courseId}/assignments": {

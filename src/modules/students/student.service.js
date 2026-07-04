@@ -25,7 +25,10 @@ const getStudentDashboard = async (userId) => {
     .populate("universityId", "name city logo");
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
-  const enrollments = await Enrollment.find({ studentId: student._id, status: "active" })
+  const enrollments = await Enrollment.find({
+    studentId: student._id,
+    status: { $in: ["active", "completed"] },
+  })
     .populate({
       path: "courseId",
       select: "title description thumbnail category level totalLessons isPublished metCost",
@@ -81,7 +84,10 @@ const getAvailableCourses = async (userId, query) => {
   ]);
 
   const enrolledIds = (
-    await Enrollment.find({ studentId: student._id, status: "active" }).select("courseId")
+    await Enrollment.find({
+      studentId: student._id,
+      status: { $in: ["active", "completed"] },
+    }).select("courseId")
   ).map((e) => e.courseId.toString());
 
   return {
@@ -135,7 +141,17 @@ const enrollInCourse = async (userId, courseId) => {
 
   // Create enrollment
   await Enrollment.create({ studentId: student._id, courseId });
-  await Progress.create({ studentId: student._id, courseId, percentage: 0 });
+  await Progress.findOneAndUpdate(
+    { studentId: student._id, courseId },
+    {
+      completedLessons: [],
+      completedAssignments: [],
+      completedExams: [],
+      percentage: 0,
+      lastAccessedAt: new Date(),
+    },
+    { upsert: true, new: true, runValidators: true }
+  );
 
   // Update course counters
   await Course.findByIdAndUpdate(courseId, {
@@ -187,6 +203,7 @@ const dropCourse = async (userId, courseId) => {
   if (!enrollment) throw new ApiError(404, "أنت غير مسجل في هذا الكورس");
 
   await enrollment.deleteOne();
+  await Progress.findOneAndDelete({ studentId: student._id, courseId });
   await Student.findByIdAndUpdate(student._id, { $pull: { enrolledCourses: courseId } });
   await Course.findByIdAndUpdate(courseId, { $inc: { enrolledCount: -1 } });
 };
@@ -200,7 +217,11 @@ const getCourseContent = async (userId, courseId) => {
   const student    = await Student.findOne({ userId });
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
-  const enrollment = await Enrollment.findOne({ studentId: student._id, courseId, status: "active" });
+  const enrollment = await Enrollment.findOne({
+    studentId: student._id,
+    courseId,
+    status: { $in: ["active", "completed"] },
+  });
   if (!enrollment) throw new ApiError(403, "أنت غير مسجل في هذا الكورس");
 
   const course  = await Course.findById(courseId)
@@ -227,7 +248,10 @@ const getChatInstructors = async (userId) => {
   const student     = await Student.findOne({ userId });
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
-  const enrollments = await Enrollment.find({ studentId: student._id, status: "active" })
+  const enrollments = await Enrollment.find({
+    studentId: student._id,
+    status: { $in: ["active", "completed"] },
+  })
     .populate({
       path: "courseId",
       select: "title thumbnail instructorId",

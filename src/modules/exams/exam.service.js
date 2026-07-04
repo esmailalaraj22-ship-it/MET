@@ -79,7 +79,9 @@ const submitExam = async (userId, courseId, examId, answers, timeTaken = 0) => {
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
   const enrollment = await Enrollment.findOne({
-    studentId: student._id, courseId, status: "active",
+    studentId: student._id,
+    courseId,
+    status: { $in: ["active", "completed"] },
   });
   if (!enrollment) throw new ApiError(403, "أنت غير مسجل في هذا الكورس");
 
@@ -167,7 +169,10 @@ const getExamResults = async (userId, userRole, courseId, examId, query) => {
 
   const submittedStudentIds = submitted.map((r) => r.studentId._id.toString());
 
-  const allEnrolled = await Enrollment.find({ courseId, status: "active" })
+  const allEnrolled = await Enrollment.find({
+    courseId,
+    status: { $in: ["active", "completed"] },
+  })
     .populate({ path: "studentId", populate: { path: "userId", select: "firstName familyName email" } });
 
   const notSubmitted = allEnrolled

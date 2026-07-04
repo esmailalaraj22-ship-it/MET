@@ -202,7 +202,12 @@ const createCourse = async (data, adminUserId) => {
     throw new ApiError(400, "بعض الجامعات المحددة غير موجودة");
 
   const slug   = slugify(data.title, { lower: true, strict: true }) + "-" + Date.now();
-  const course = await Course.create({ ...data, slug, createdBy: adminUserId });
+  const course = await Course.create({
+    ...data,
+    slug,
+    createdBy: adminUserId,
+    isPublished: true,
+  });
 
   if (data.instructorId) {
     await Instructor.findByIdAndUpdate(data.instructorId, {

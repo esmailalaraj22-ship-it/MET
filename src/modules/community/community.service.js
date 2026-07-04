@@ -31,7 +31,9 @@ const verifyCourseAccess = async (userId, userRole, courseId) => {
     const student = await Student.findOne({ userId });
     if (!student) return false;
     const enrollment = await Enrollment.findOne({
-      studentId: student._id, courseId, status: "active",
+      studentId: student._id,
+      courseId,
+      status: { $in: ["active", "completed"] },
     });
     return !!enrollment;
   }

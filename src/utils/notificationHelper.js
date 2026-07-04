@@ -17,7 +17,10 @@ const notifyUser = async (userId, type, title, body, relatedId = null, relatedTy
  */
 const notifyCourseStudents = async (courseId, type, title, body) => {
   try {
-    const enrollments = await Enrollment.find({ courseId, status: "active" }).populate({
+    const enrollments = await Enrollment.find({
+      courseId,
+      status: { $in: ["active", "completed"] },
+    }).populate({
       path: "studentId",
       select: "userId",
     });

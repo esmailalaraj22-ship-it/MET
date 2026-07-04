@@ -74,7 +74,9 @@ const markLessonCompleted = async (userId, courseId, lessonId) => {
   if (!student) throw new ApiError(404, "الطالب غير موجود");
 
   const enrollment = await Enrollment.findOne({
-    studentId: student._id, courseId, status: "active",
+    studentId: student._id,
+    courseId,
+    status: { $in: ["active", "completed"] },
   });
   if (!enrollment) throw new ApiError(403, "أنت غير مسجل في هذا الكورس");
 

@@ -28,7 +28,7 @@ const submitAssignment = async (userId, assignmentId, data) => {
   const enrollment = await Enrollment.findOne({
     studentId: student._id,
     courseId:  assignment.courseId,
-    status:    "active",
+    status:    { $in: ["active", "completed"] },
   });
   if (!enrollment) throw new ApiError(403, "أنت غير مسجل في هذا الكورس");
 
@@ -76,7 +76,10 @@ const getSubmissions = async (userId, userRole, assignmentId) => {
     .sort({ submittedAt: 1 });
 
   const submittedStudentIds = submitted.map((s) => s.studentId._id.toString());
-  const allEnrolled = await Enrollment.find({ courseId: assignment.courseId, status: "active" })
+  const allEnrolled = await Enrollment.find({
+    courseId: assignment.courseId,
+    status: { $in: ["active", "completed"] },
+  })
     .populate({ path: "studentId", populate: { path: "userId", select: "firstName familyName email" } });
 
   const notSubmitted = allEnrolled

@@ -3,16 +3,26 @@ const ApiError = require("../utils/ApiError");
 const errorHandler = (err, req, res, next) => {
   let error = Object.assign(new ApiError(err.statusCode || 500, err.message), err);
 
-  // Mongoose duplicate key
+  // Mongoose duplicate key — name the field in Arabic so the user knows
+  // exactly what is already taken (e.g. "البريد الإلكتروني مستخدم مسبقاً")
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue || {})[0] || "field";
-    error = new ApiError(409, `القيمة المدخلة في حقل '${field}' مستخدمة مسبقاً`);
+    const duplicateLabels = {
+      email:      "البريد الإلكتروني",
+      nationalId: "رقم الهوية الوطنية",
+      title:      "العنوان",
+      name:       "الاسم",
+    };
+    const field = Object.keys(err.keyValue || {})[0] || "";
+    const label = duplicateLabels[field] || `القيمة المدخلة في حقل '${field}'`;
+    const msg   = `${label} مستخدم مسبقاً`;
+    error = new ApiError(409, msg, [msg]);
   }
 
-  // Mongoose validation errors
+  // Mongoose validation errors — the schemas already carry Arabic messages;
+  // surface them in the main message instead of a generic one
   if (err.name === "ValidationError") {
     const messages = Object.values(err.errors).map((e) => e.message);
-    error = new ApiError(400, "خطأ في التحقق من البيانات", messages);
+    error = new ApiError(400, messages.join("، "), messages);
   }
 
   // Mongoose CastError (invalid ObjectId)

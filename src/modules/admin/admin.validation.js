@@ -13,9 +13,10 @@ const createInstructorSchema = Joi.object({
   familyName:   Joi.string().min(2).max(50).required().messages({ "any.required": "اسم العائلة مطلوب" }),
   email:        Joi.string().email().required().messages({ "any.required": "البريد الإلكتروني مطلوب" }),
   password:     Joi.string().min(6).required().messages({ "any.required": "كلمة المرور مطلوبة" }),
-  nationalId:   Joi.string().length(10).pattern(/^[0-9]+$/).required().messages({
+  nationalId:   Joi.string().length(9).pattern(/^[0-9]+$/).required().messages({
     "any.required": "رقم الهوية الوطنية مطلوب",
-    "string.length": "رقم الهوية يجب أن يكون 10 أرقام",
+    "string.length": "رقم الهوية يجب أن يكون 9 أرقام",
+    "string.pattern.base": "رقم الهوية يجب أن يحتوي على أرقام فقط",
   }),
   phoneNumber:   Joi.string().optional().allow(null, ""),
   dateOfBirth:   Joi.date().optional().allow(null),

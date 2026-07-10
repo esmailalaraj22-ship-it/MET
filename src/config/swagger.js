@@ -329,7 +329,7 @@ const options = {
                     familyName:   { type: "string", example: "السعيد" },
                     email:        { type: "string", example: "instructor@edu.com" },
                     password:     { type: "string", example: "pass123" },
-                    nationalId:   { type: "string", example: "1234567890" },
+                    nationalId:   { type: "string", example: "123456789", description: "9 أرقام بالضبط" },
                     paypalAccount:{ type: "string", example: "pay@paypal.com" },
                   },
                 },

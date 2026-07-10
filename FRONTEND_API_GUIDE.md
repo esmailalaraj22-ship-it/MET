@@ -599,7 +599,7 @@ Body:
   "familyName": "السعيد",
   "email": "instructor@edu.com",
   "password": "securePass123",
-  "nationalId": "1234567890",
+  "nationalId": "123456789",
   "phoneNumber": "+966501234567",
   "paypalAccount": "instructor@paypal.com",
   "profileImage": "https://example.com/photo.jpg"

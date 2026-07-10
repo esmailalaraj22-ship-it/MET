@@ -312,7 +312,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"firstName\": \"\\u0623\\u062d\\u0645\\u062f\", \"secondName\": \"\\u0645\\u062d\\u0645\\u062f\", \"familyName\": \"\\u0627\\u0644\\u0633\\u0639\\u064a\\u062f\", \"email\": \"instructor_test@edu.com\", \"password\": \"instPass123\", \"nationalId\": \"1234567890\", \"paypalAccount\": \"inst@paypal.com\"}"
+              "raw": "{\"firstName\": \"\\u0623\\u062d\\u0645\\u062f\", \"secondName\": \"\\u0645\\u062d\\u0645\\u062f\", \"familyName\": \"\\u0627\\u0644\\u0633\\u0639\\u064a\\u062f\", \"email\": \"instructor_test@edu.com\", \"password\": \"instPass123\", \"nationalId\": \"123456789\", \"paypalAccount\": \"inst@paypal.com\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/instructors"

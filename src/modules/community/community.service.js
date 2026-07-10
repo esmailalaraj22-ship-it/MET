@@ -3,6 +3,7 @@ const Comment    = require("./comment.model");
 const Enrollment = require("../enrollments/enrollment.model");
 const Student    = require("../students/student.model");
 const Course     = require("../courses/course.model");
+const User       = require("../users/user.model");
 const ApiError   = require("../../utils/ApiError");
 const { verifyCoursePermission } = require("../../utils/coursePermission");
 const { notifyUser }             = require("../../utils/notificationHelper");
@@ -84,18 +85,23 @@ const deletePost = async (postId, userId, userRole, courseId = null) => {
 
   const isOwner = post.authorId.toString() === userId.toString();
 
-  // Instructor cannot delete admin posts
-  if (userRole === "instructor" && !isOwner) {
-    // Find post author's role
-    const User = require("../users/user.model");
+  // Moderation scope: owner deletes his own; admin deletes anything;
+  // an instructor moderates ONLY inside courses assigned to him
+  if (!isOwner && userRole !== "admin") {
+    if (userRole !== "instructor") {
+      throw new ApiError(403, "لا تملك صلاحية حذف هذا المنشور");
+    }
+    if (!post.courseId) {
+      throw new ApiError(403, "لا يمكن للمدرس حذف منشورات الآخرين في المجتمع العام");
+    }
+    // Throws 403 if this course is not assigned to the instructor
+    await verifyCoursePermission(userId, userRole, post.courseId.toString());
+
     const author = await User.findById(post.authorId).select("role");
     if (author && author.role === "admin") {
       throw new ApiError(403, "المدرس لا يستطيع حذف منشورات الأدمن");
     }
   }
-
-  const isMod = ["admin", "instructor"].includes(userRole);
-  if (!isOwner && !isMod) throw new ApiError(403, "لا تملك صلاحية حذف هذا المنشور");
 
   post.isDeleted = true;
   await post.save();
@@ -124,6 +130,15 @@ const togglePin = async (postId, userId, userRole) => {
   }
   const post = await Post.findOne({ _id: postId, isDeleted: false });
   if (!post) throw new ApiError(404, "المنشور غير موجود");
+
+  // Instructor may pin only inside his assigned course community;
+  // pinning in the general community is admin-only
+  if (userRole === "instructor") {
+    if (!post.courseId) {
+      throw new ApiError(403, "تثبيت منشورات المجتمع العام صلاحية للأدمن فقط");
+    }
+    await verifyCoursePermission(userId, userRole, post.courseId.toString());
+  }
 
   post.isPinned = !post.isPinned;
   await post.save();
@@ -183,9 +198,24 @@ const deleteComment = async (commentId, userId, userRole) => {
   if (!comment) throw new ApiError(404, "التعليق غير موجود");
 
   const isOwner = comment.authorId.toString() === userId.toString();
-  const isMod   = ["admin", "instructor"].includes(userRole);
 
-  if (!isOwner && !isMod) throw new ApiError(403, "لا تملك صلاحية حذف هذا التعليق");
+  // Same moderation scope as posts: admin everywhere, instructor only
+  // inside his assigned course community, everyone else owns-only
+  if (!isOwner && userRole !== "admin") {
+    if (userRole !== "instructor") {
+      throw new ApiError(403, "لا تملك صلاحية حذف هذا التعليق");
+    }
+    const post = await Post.findById(comment.postId).select("courseId");
+    if (!post?.courseId) {
+      throw new ApiError(403, "لا يمكن للمدرس حذف تعليقات الآخرين في المجتمع العام");
+    }
+    await verifyCoursePermission(userId, userRole, post.courseId.toString());
+
+    const author = await User.findById(comment.authorId).select("role");
+    if (author && author.role === "admin") {
+      throw new ApiError(403, "المدرس لا يستطيع حذف تعليقات الأدمن");
+    }
+  }
 
   comment.isDeleted = true;
   await comment.save();

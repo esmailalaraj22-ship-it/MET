@@ -419,10 +419,36 @@ const options = {
           responses: { 200: { description: "قائمة المدفوعات" } },
         },
       },
+      "/admin/finance/instructors/{instructorId}/cancel": {
+        post: {
+          tags: ["Admin"],
+          summary: "إلغاء مبلغ محجوز لمدرس (بدون صرف)",
+          description: "يخصم من رصيد المدرس المحجوز بدون دفع — يرفض إن تجاوز المبلغ المحجوز",
+          parameters: [{ name: "instructorId", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    amount: { type: "number", example: 50 },
+                    note:   { type: "string", example: "تصحيح خطأ محاسبي" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "تم الإلغاء" },
+            400: { description: "المبلغ يتجاوز المحجوز" },
+          },
+        },
+      },
       "/admin/finance/instructors/{instructorId}/release": {
         post: {
           tags: ["Admin"],
-          summary: "صرف مبلغ لمدرس",
+          summary: "صرف مبلغ لمدرس (من المحجوز إلى المُصرف)",
           parameters: [{ name: "instructorId", in: "path", required: true, schema: { type: "string" } }],
           requestBody: {
             required: true,

@@ -48,9 +48,9 @@ const getInstructorDashboard = async (userId) => {
   const finance = await InstructorFinance.findOne({ instructorId: instructor._id });
 
   const totalStudents = instructor.assignedCourses.reduce((s, c) => s + (c.enrolledCount || 0), 0);
-  const totalIncome   = finance?.totalEarned   || 0;
-  const reserved      = finance?.totalReserved || 0;
-  const released      = finance?.totalReleased || 0;
+  const earned   = finance?.totalEarned   || 0; // instructor's immediate share
+  const reserved = finance?.totalReserved || 0; // held by academy, awaiting release
+  const released = finance?.totalReleased || 0; // paid out from the reserved bucket
 
   return {
     instructor,
@@ -58,13 +58,18 @@ const getInstructorDashboard = async (userId) => {
       totalCourses:  instructor.assignedCourses.length,
       totalStudents,
       finance: {
-        totalEarnedMET:   totalIncome,
-        totalEarnedUSD:   totalIncome * MET_TO_USD,
+        totalEarnedMET:   earned,
+        totalEarnedUSD:   earned * MET_TO_USD,
         reservedMET:      reserved,
         reservedUSD:      reserved * MET_TO_USD,
         releasedMET:      released,
         releasedUSD:      released * MET_TO_USD,
-        availableMET:     totalIncome - reserved - released,
+        // What the instructor actually holds: immediate share + released payouts
+        totalReceivedMET: earned + released,
+        totalReceivedUSD: (earned + released) * MET_TO_USD,
+        // Still held by the academy awaiting admin release
+        pendingMET:       reserved,
+        pendingUSD:       reserved * MET_TO_USD,
       },
     },
     courses: instructor.assignedCourses,
@@ -149,14 +154,22 @@ const getFinancialDashboard = async (userId) => {
     };
   });
 
+  const fEarned   = finance?.totalEarned   || 0;
+  const fReserved = finance?.totalReserved || 0;
+  const fReleased = finance?.totalReleased || 0;
+
   return {
     summary: {
-      totalEarnedMET:   finance?.totalEarned   || 0,
-      totalEarnedUSD:   (finance?.totalEarned  || 0) * MET_TO_USD,
-      reservedMET:      finance?.totalReserved || 0,
-      reservedUSD:      (finance?.totalReserved|| 0) * MET_TO_USD,
-      releasedMET:      finance?.totalReleased || 0,
-      releasedUSD:      (finance?.totalReleased|| 0) * MET_TO_USD,
+      totalEarnedMET:   fEarned,
+      totalEarnedUSD:   fEarned * MET_TO_USD,
+      reservedMET:      fReserved,
+      reservedUSD:      fReserved * MET_TO_USD,
+      releasedMET:      fReleased,
+      releasedUSD:      fReleased * MET_TO_USD,
+      totalReceivedMET: fEarned + fReleased,
+      totalReceivedUSD: (fEarned + fReleased) * MET_TO_USD,
+      pendingMET:       fReserved,
+      pendingUSD:       fReserved * MET_TO_USD,
     },
     courseBreakdown,
     recentTransactions: (finance?.transactions || []).slice(-20).reverse(),

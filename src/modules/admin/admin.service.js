@@ -309,16 +309,23 @@ const getPlatformStats = async () => {
     .select("title enrolledCount totalIncome totalReserved metCost instructorPercentage reservedPercentage")
     .sort({ enrolledCount: -1 }).limit(10);
 
-  const totalIncomeMET  = courses.reduce((s, c) => s + (c.totalIncome    || 0), 0);
-  const totalReservedMET= courses.reduce((s, c) => s + (c.totalReserved  || 0), 0);
-  const netProfitMET    = totalIncomeMET - totalReservedMET;
+  // Totals over ALL courses (not just the top-10 shown below).
+  // Money model: income splits into instructor share (immediate) +
+  // reserved (held by academy) + the remainder = platform net profit
+  const allCourses = await Course.find().select("totalIncome totalReserved instructorPercentage");
+  const totalIncomeMET     = allCourses.reduce((s, c) => s + (c.totalIncome   || 0), 0);
+  const totalReservedMET   = allCourses.reduce((s, c) => s + (c.totalReserved || 0), 0);
+  const totalInstructorMET = allCourses.reduce(
+    (s, c) => s + Math.round((c.totalIncome || 0) * ((c.instructorPercentage || 0) / 100)), 0);
+  const netProfitMET = totalIncomeMET - totalInstructorMET - totalReservedMET;
 
   return {
     totalStudents, totalInstructors, totalCourses, totalUniversities,
     finance: {
-      totalIncomeMET,  totalIncomeUSD:   totalIncomeMET   * MET_TO_USD,
-      totalReservedMET,totalReservedUSD: totalReservedMET * MET_TO_USD,
-      netProfitMET,    netProfitUSD:     netProfitMET     * MET_TO_USD,
+      totalIncomeMET,     totalIncomeUSD:     totalIncomeMET     * MET_TO_USD,
+      totalInstructorMET, totalInstructorUSD: totalInstructorMET * MET_TO_USD,
+      totalReservedMET,   totalReservedUSD:   totalReservedMET   * MET_TO_USD,
+      netProfitMET,       netProfitUSD:       netProfitMET       * MET_TO_USD,
     },
     topCourses: courses,
   };

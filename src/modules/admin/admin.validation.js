@@ -39,6 +39,15 @@ const createCourseSchema = Joi.object({
   metCost:              Joi.number().min(0).optional(),
   price:                Joi.number().min(0).optional(),
   thumbnail:            Joi.string().optional().allow(null, ""),
+}).custom((value, helpers) => {
+  // Money model: instructor share + reserved must leave room for platform profit
+  const total = (value.instructorPercentage || 0) + (value.reservedPercentage || 0);
+  if (total > 100) {
+    return helpers.message(
+      `مجموع نسبة المدرس والنسبة المحجوزة (${total}%) لا يمكن أن يتجاوز 100%`
+    );
+  }
+  return value;
 });
 
 const createUniversitySchema = Joi.object({

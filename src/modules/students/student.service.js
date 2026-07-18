@@ -237,6 +237,13 @@ const dropCourse = async (userId, courseId, confirmNoRefund = false) => {
   await Student.findByIdAndUpdate(student._id, { $pull: { enrolledCourses: courseId } });
   await Course.findByIdAndUpdate(courseId, { $inc: { enrolledCount: -1 } });
 
+  // The refund reverses the instructor's share ONLY if the enrollment was
+  // made under the current instructor; enrollments that predate his
+  // assignment were already settled to the academy at handover time
+  const enrolledUnderCurrentInstructor =
+    !course.instructorAssignedAt ||
+    new Date(enrollment.enrolledAt) >= new Date(course.instructorAssignedAt);
+
   if (refundable) {
     // Refund the student
     await Student.findByIdAndUpdate(student._id, {
@@ -258,7 +265,7 @@ const dropCourse = async (userId, courseId, confirmNoRefund = false) => {
     });
 
     // Reverse the instructor's share
-    if (course.instructorId) {
+    if (course.instructorId && enrolledUnderCurrentInstructor) {
       const instructorEarning = Math.round(paidAmount * (course.instructorPercentage / 100));
       await InstructorFinance.findOneAndUpdate(
         { instructorId: course.instructorId },
@@ -294,7 +301,9 @@ const dropCourse = async (userId, courseId, confirmNoRefund = false) => {
         "student_dropped",
         "انسحاب طالب من الكورس",
         refundable
-          ? `انسحب الطالب ${studentName} من كورس "${course.title}" خلال مهلة الاسترداد — استُردت نقاطه (${paidAmount} MET) وتم خصم حصتك من أرباح هذا التسجيل`
+          ? enrolledUnderCurrentInstructor
+            ? `انسحب الطالب ${studentName} من كورس "${course.title}" خلال مهلة الاسترداد — استُردت نقاطه (${paidAmount} MET) وتم خصم حصتك من أرباح هذا التسجيل`
+            : `انسحب الطالب ${studentName} من كورس "${course.title}" خلال مهلة الاسترداد — استُردت نقاطه (${paidAmount} MET) وأرباحك لم تتأثر (تسجيله كان قبل تعيينك)`
           : `انسحب الطالب ${studentName} من كورس "${course.title}" بعد انتهاء مهلة الاسترداد — لم تُسترد النقاط وأرباحك لم تتأثر`,
         course._id,
         "Course"

@@ -11,6 +11,9 @@ const courseSchema = new mongoose.Schema(
       ref: "Instructor",
       default: null,
     },
+    // When the current instructor was assigned — enrollments before this
+    // date do not belong to him financially (refunds must not touch him)
+    instructorAssignedAt: { type: Date, default: null },
     allowedUniversities: [
       { type: mongoose.Schema.Types.ObjectId, ref: "University" }
     ],

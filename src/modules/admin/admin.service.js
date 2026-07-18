@@ -9,7 +9,7 @@ const Notification      = require("../notifications/notification.model");
 const InstructorFinance = require("../finance/instructorFinance.model");
 const ApiError          = require("../../utils/ApiError");
 const { encryptData }   = require("../../utils/hashData");
-const { broadcastToAll } = require("../../utils/notificationHelper");
+const { broadcastToAll, notifyUser } = require("../../utils/notificationHelper");
 const { getPagination, getPaginationMeta } = require("../../utils/pagination");
 
 const MET_TO_USD = 2;
@@ -207,6 +207,7 @@ const createCourse = async (data, adminUserId) => {
     slug,
     createdBy: adminUserId,
     isPublished: true,
+    instructorAssignedAt: data.instructorId ? new Date() : null,
   });
 
   if (data.instructorId) {
@@ -249,12 +250,73 @@ const assignInstructorToCourse = async (courseId, instructorId) => {
   const inst   = await Instructor.findById(instructorId);
   if (!inst)   throw new ApiError(404, "المدرس غير موجود");
 
-  if (course.instructorId && course.instructorId.toString() !== instructorId) {
-    await Instructor.findByIdAndUpdate(course.instructorId, { $pull: { assignedCourses: course._id } });
+  const previousId = course.instructorId;
+  const isChange   = previousId && previousId.toString() !== instructorId.toString();
+  let transferredToAcademy = 0;
+
+  if (isChange) {
+    // Handover rule: the old instructor keeps earnings older than the refund
+    // window; profits from the last 48h (refund window still open) return to
+    // the academy; the new instructor earns only from post-assignment enrollments
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const recentEnrollments = await Enrollment.find({
+      courseId,
+      status: { $in: ["active", "completed"] },
+      enrolledAt: { $gte: cutoff },
+    });
+
+    let earnedBack = 0, reservedBack = 0;
+    for (const enr of recentEnrollments) {
+      const paid = enr.metPaid ?? course.metCost ?? 0;
+      earnedBack   += Math.round(paid * ((course.instructorPercentage || 0) / 100));
+      reservedBack += Math.round(paid * ((course.reservedPercentage   || 0) / 100));
+    }
+
+    if (earnedBack > 0 || reservedBack > 0) {
+      const finance = await InstructorFinance.findOne({ instructorId: previousId });
+      if (finance) {
+        const earnedDeduct   = Math.min(earnedBack,   finance.totalEarned);
+        const reservedDeduct = Math.min(reservedBack, finance.totalReserved);
+        transferredToAcademy = earnedDeduct + reservedDeduct;
+        finance.totalEarned   -= earnedDeduct;
+        finance.totalReserved -= reservedDeduct;
+        finance.transactions.push({
+          courseId:    course._id,
+          courseTitle: course.title,
+          amount:      -transferredToAcademy,
+          amountUSD:   -transferredToAcademy * MET_TO_USD,
+          type:        "cancelled",
+          note:        `استعادت الأكاديمية أرباح آخر 48 ساعة (${recentEnrollments.length} تسجيل) بسبب تغيير مدرس الكورس`,
+        });
+        await finance.save();
+      }
+    }
+
+    await Instructor.findByIdAndUpdate(previousId, { $pull: { assignedCourses: course._id } });
+
+    const prevInst = await Instructor.findById(previousId).select("userId");
+    if (prevInst?.userId) {
+      await notifyUser(
+        prevInst.userId, "course_update", "تغيير إسناد كورس",
+        `تم إسناد كورس "${course.title}" لمدرس آخر. احتفظت بأرباحك السابقة` +
+          (transferredToAcademy > 0 ? `، وعادت أرباح آخر 48 ساعة (${transferredToAcademy} MET) للأكاديمية` : ""),
+        course._id, "Course"
+      );
+    }
   }
-  course.instructorId = instructorId;
+
+  course.instructorId         = instructorId;
+  course.instructorAssignedAt = new Date();
   await course.save();
   await Instructor.findByIdAndUpdate(instructorId, { $addToSet: { assignedCourses: course._id } });
+
+  if (inst.userId) {
+    await notifyUser(
+      inst.userId, "course_update", "تم إسناد كورس إليك",
+      `تم تعيينك مدرساً لكورس "${course.title}" — تُحسب أرباحك من التسجيلات الجديدة بعد تعيينك`,
+      course._id, "Course"
+    );
+  }
   return course;
 };
 

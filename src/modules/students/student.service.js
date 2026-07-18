@@ -31,7 +31,7 @@ const getStudentDashboard = async (userId) => {
   })
     .populate({
       path: "courseId",
-      select: "title description thumbnail category level totalLessons isPublished metCost",
+      select: "title description thumbnail category level totalLessons isPublished metCost instructorId",
       populate: {
         path: "instructorId",
         populate: { path: "userId", select: "firstName familyName profileImage" },
@@ -78,7 +78,7 @@ const getAvailableCourses = async (userId, query) => {
   const [courses, total] = await Promise.all([
     Course.find(filter)
       .populate({ path: "instructorId", populate: { path: "userId", select: "firstName familyName profileImage" } })
-      .select("title description thumbnail category level totalLessons metCost price enrolledCount slug")
+      .select("title description thumbnail category level totalLessons metCost price enrolledCount slug instructorId")
       .skip(skip).limit(limit).sort({ createdAt: -1 }),
     Course.countDocuments(filter),
   ]);

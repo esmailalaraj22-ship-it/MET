@@ -778,6 +778,52 @@
         }
       }
     },
+    "/admin/courses/{id}/assign-instructor": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "تعيين أو تغيير مدرس الكورس (تسليم مالي تلقائي)",
+        "description": "عند التغيير: المدرس القديم يحتفظ بأرباح ما قبل 48 ساعة، وأرباح آخر 48 ساعة تعود للأكاديمية، والمدرس الجديد يكسب من التسجيلات بعد تعيينه. يصل إشعار تلقائي للمدرسَين (القديم والجديد).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "instructorId"
+                ],
+                "properties": {
+                  "instructorId": {
+                    "type": "string",
+                    "example": "665a3f2b1c4e8d0012345678"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم التعيين/التغيير"
+          },
+          "404": {
+            "description": "الكورس أو المدرس غير موجود"
+          }
+        }
+      }
+    },
     "/admin/students": {
       "get": {
         "tags": [

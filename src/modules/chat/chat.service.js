@@ -3,6 +3,8 @@ const Message      = require("./message.model");
 const Student      = require("../students/student.model");
 const Enrollment   = require("../enrollments/enrollment.model");
 const Course       = require("../courses/course.model");
+const User         = require("../users/user.model");
+const Notification = require("../notifications/notification.model");
 const ApiError     = require("../../utils/ApiError");
 const { getPagination, getPaginationMeta } = require("../../utils/pagination");
 
@@ -97,6 +99,33 @@ const sendMessage = async (conversationId, senderId, content, type = "text", fil
     lastMessage:   message._id,
     lastMessageAt: new Date(),
   });
+
+  // Unread-message notification carrying the sender's name.
+  // One UNREAD notification per conversation (updated with the latest
+  // message) so the bell never floods with duplicates from one chat.
+  try {
+    const sender = await User.findById(senderId).select("firstName familyName");
+    const senderName = sender ? `${sender.firstName} ${sender.familyName}` : "مستخدم";
+    const preview = type === "text" ? String(content || "").slice(0, 60) : "📎 مرفق جديد";
+    const recipients = conversation.participants.filter(
+      (p) => p.toString() !== senderId.toString()
+    );
+    await Promise.all(
+      recipients.map((recipientId) =>
+        Notification.findOneAndUpdate(
+          { userId: recipientId, type: "message", relatedId: conversation._id, isRead: false },
+          {
+            title: `رسالة جديدة من ${senderName}`,
+            body: preview,
+            relatedType: "Conversation",
+          },
+          { upsert: true, setDefaultsOnInsert: true }
+        )
+      )
+    );
+  } catch (err) {
+    console.error("Chat notification error:", err.message);
+  }
 
   return message;
 };

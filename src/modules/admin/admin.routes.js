@@ -5,7 +5,7 @@ const { protect }    = require("../../middlewares/auth.middleware");
 const { authorize }  = require("../../middlewares/role.middleware");
 const validate       = require("../../middlewares/validate.middleware");
 const {
-  updateProfileSchema, createInstructorSchema, createCourseSchema,
+  updateProfileSchema, createInstructorSchema, updateInstructorSchema, updateStudentSchema, createCourseSchema,
   createUniversitySchema, applyDiscountSchema, assignInstructorSchema,
   addMetSchema, releasePaymentSchema,
 } = require("./admin.validation");
@@ -29,10 +29,12 @@ router.route("/instructors")
   .post(validate(createInstructorSchema), ctrl.createInstructor)
   .get(ctrl.getInstructors);
 router.get("/instructors/:id",           ctrl.getInstructorById);
+router.patch("/instructors/:id",         validate(updateInstructorSchema), ctrl.updateInstructor);
 router.patch("/instructors/:id/toggle",  ctrl.toggleInstructor);
 
 // Students
 router.get("/students",                  ctrl.getStudents);
+router.patch("/students/:id",            validate(updateStudentSchema), ctrl.updateStudent);
 router.patch("/students/:id/toggle",     ctrl.toggleStudent);
 router.patch("/students/:id/discount",   validate(applyDiscountSchema), ctrl.applyDiscount);
 router.patch("/students/:id/met",        validate(addMetSchema), ctrl.addMet);

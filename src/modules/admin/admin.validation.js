@@ -25,6 +25,27 @@ const createInstructorSchema = Joi.object({
   profileImage:  Joi.string().uri().optional().allow(null, ""),
 });
 
+const updateInstructorSchema = Joi.object({
+  firstName:     Joi.string().min(2).max(50).optional(),
+  secondName:    Joi.string().min(2).max(50).optional(),
+  familyName:    Joi.string().min(2).max(50).optional(),
+  email:         Joi.string().email().optional(),
+  profileImage:  Joi.string().uri().optional().allow(null, ""),
+  phoneNumber:   Joi.string().optional().allow(null, ""),
+  dateOfBirth:   Joi.date().optional().allow(null, ""),
+  paypalAccount: Joi.string().email().optional().allow(null, ""),
+  bio:           Joi.string().max(1000).optional().allow(""),
+}).min(1);
+
+const updateStudentSchema = Joi.object({
+  firstName:    Joi.string().min(2).max(50).optional(),
+  secondName:   Joi.string().min(2).max(50).optional(),
+  familyName:   Joi.string().min(2).max(50).optional(),
+  email:        Joi.string().email().optional(),
+  profileImage: Joi.string().uri().optional().allow(null, ""),
+  universityId: Joi.string().hex().length(24).optional(),
+}).min(1);
+
 const createCourseSchema = Joi.object({
   title:        Joi.string().min(3).max(200).required().messages({ "any.required": "عنوان الكورس مطلوب" }),
   description:  Joi.string().max(2000).optional().allow(""),
@@ -77,7 +98,7 @@ const releasePaymentSchema = Joi.object({
 });
 
 module.exports = {
-  updateProfileSchema, createInstructorSchema, createCourseSchema,
+  updateProfileSchema, createInstructorSchema, updateInstructorSchema, updateStudentSchema, createCourseSchema,
   createUniversitySchema, applyDiscountSchema, assignInstructorSchema,
   addMetSchema, releasePaymentSchema,
 };

@@ -10,6 +10,8 @@ const { getPagination, getPaginationMeta } = require("../../utils/pagination");
 
 const MET_TO_USD = 2;
 
+const emptyStringToNull = (value) => (value === "" ? null : value);
+
 // ── PROFILE ───────────────────────────────────────────────
 const getInstructorProfile = async (userId) => {
   const user       = await User.findById(userId);
@@ -26,13 +28,27 @@ const updateInstructorProfile = async (userId, updates) => {
 
   const instData = {};
   if (updates.bio           !== undefined) instData.bio           = updates.bio;
-  if (updates.paypalAccount !== undefined) instData.paypalAccount = updates.paypalAccount;
-  if (updates.phoneNumber   !== undefined) instData.phoneNumber   = updates.phoneNumber;
+  if (updates.paypalAccount !== undefined) instData.paypalAccount = emptyStringToNull(updates.paypalAccount);
+  if (updates.phoneNumber   !== undefined) instData.phoneNumber   = emptyStringToNull(updates.phoneNumber);
+  if (updates.dateOfBirth   !== undefined) instData.dateOfBirth   = emptyStringToNull(updates.dateOfBirth);
 
   if (Object.keys(userData).length > 0) {
-    await User.findByIdAndUpdate(userId, userData, { runValidators: true });
+    const user = await User.findByIdAndUpdate(userId, userData, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) throw new ApiError(404, "حساب المدرس غير موجود");
   }
-  const instructor = await Instructor.findOneAndUpdate({ userId }, instData, { new: true });
+
+  const instructor = Object.keys(instData).length > 0
+    ? await Instructor.findOneAndUpdate(
+      { userId },
+      instData,
+      { new: true, runValidators: true }
+    )
+    : await Instructor.findOne({ userId });
+  if (!instructor) throw new ApiError(404, "الملف الشخصي للمدرس غير موجود");
+
   return instructor;
 };
 

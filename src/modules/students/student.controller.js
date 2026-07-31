@@ -6,6 +6,10 @@ const getProfile          = asyncHandler(async (req, res) => {
   const student = await service.getStudentProfile(req.user._id);
   return ApiResponse.success(res, 200, "الملف الشخصي", { student });
 });
+const updateProfile       = asyncHandler(async (req, res) => {
+  const student = await service.updateStudentProfile(req.user._id, req.body);
+  return ApiResponse.success(res, 200, "تم تحديث الملف الشخصي", { student });
+});
 const getDashboard        = asyncHandler(async (req, res) => {
   const data = await service.getStudentDashboard(req.user._id);
   return ApiResponse.success(res, 200, "لوحة التحكم", data);
@@ -37,7 +41,7 @@ const getMetHistory       = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getProfile, getDashboard, getAvailableCourses,
+  getProfile, updateProfile, getDashboard, getAvailableCourses,
   enrollInCourse, dropCourse, getCourseContent,
   getChatInstructors, getMetHistory,
 };

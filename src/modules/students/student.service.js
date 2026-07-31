@@ -19,6 +19,24 @@ const getStudentProfile = async (userId) => {
   return student;
 };
 
+const updateStudentProfile = async (userId, updates) => {
+  const allowed = ["firstName", "secondName", "familyName", "profileImage"];
+  const userData = {};
+  allowed.forEach((field) => {
+    if (updates[field] !== undefined) userData[field] = updates[field];
+  });
+
+  if (Object.keys(userData).length > 0) {
+    const user = await User.findByIdAndUpdate(userId, userData, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) throw new ApiError(404, "حساب الطالب غير موجود");
+  }
+
+  return await getStudentProfile(userId);
+};
+
 // ── DASHBOARD ─────────────────────────────────────────────
 const getStudentDashboard = async (userId) => {
   const student = await Student.findOne({ userId })
@@ -406,7 +424,7 @@ const getMetHistory = async (userId) => {
 };
 
 module.exports = {
-  getStudentProfile, getStudentDashboard, getAvailableCourses,
+  getStudentProfile, updateStudentProfile, getStudentDashboard, getAvailableCourses,
   enrollInCourse, dropCourse, getCourseContent,
   getChatInstructors, getMetHistory,
 };

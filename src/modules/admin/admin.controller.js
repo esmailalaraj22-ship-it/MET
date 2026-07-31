@@ -49,6 +49,10 @@ const getInstructorById = asyncHandler(async (req, res) => {
   const inst = await service.getInstructorById(req.params.id);
   return ApiResponse.success(res, 200, "بيانات المدرس", { instructor: inst });
 });
+const updateInstructor = asyncHandler(async (req, res) => {
+  const instructor = await service.updateInstructor(req.params.id, req.body);
+  return ApiResponse.success(res, 200, "تم تحديث بيانات المدرس", { instructor });
+});
 const toggleInstructor = asyncHandler(async (req, res) => {
   const result = await service.toggleInstructorStatus(req.params.id);
   return ApiResponse.success(res, 200, result.isActive ? "تم تفعيل المدرس" : "تم تعطيل المدرس", result);
@@ -58,6 +62,10 @@ const toggleInstructor = asyncHandler(async (req, res) => {
 const getStudents = asyncHandler(async (req, res) => {
   const { students, pagination } = await service.getAllStudents(req.query);
   return ApiResponse.paginated(res, "قائمة الطلاب", students, pagination);
+});
+const updateStudent = asyncHandler(async (req, res) => {
+  const student = await service.updateStudent(req.params.id, req.body);
+  return ApiResponse.success(res, 200, "تم تحديث بيانات الطالب", { student });
 });
 const toggleStudent = asyncHandler(async (req, res) => {
   const result = await service.toggleStudentStatus(req.params.id);
@@ -129,8 +137,8 @@ const broadcastNotification = asyncHandler(async (req, res) => {
 module.exports = {
   getProfile, updateProfile, getStats,
   createUniversity, getUniversities, toggleUniversity, deleteUniversity,
-  createInstructor, getInstructors, getInstructorById, toggleInstructor,
-  getStudents, toggleStudent, applyDiscount, addMet,
+  createInstructor, getInstructors, getInstructorById, updateInstructor, toggleInstructor,
+  getStudents, updateStudent, toggleStudent, applyDiscount, addMet,
   createCourse, getCourses, getCourseDetails, assignInstructor,
   deleteCourse, getCourseStudents, removeStudentFromCourse, removeAllStudents,
   getPayments, releasePayment, cancelPayment,

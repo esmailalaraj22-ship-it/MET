@@ -14,6 +14,29 @@ const { getPagination, getPaginationMeta } = require("../../utils/pagination");
 
 const MET_TO_USD = 2;
 
+const pickFields = (source, fields) => {
+  const data = {};
+  fields.forEach((field) => {
+    if (source[field] !== undefined) data[field] = source[field];
+  });
+  return data;
+};
+
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
+const ensureEmailAvailable = async (email, currentUserId) => {
+  const normalizedEmail = normalizeEmail(email);
+  const existing = await User.findOne({
+    email: normalizedEmail,
+    _id: { $ne: currentUserId },
+  }).select("_id");
+
+  if (existing) throw new ApiError(409, "البريد الإلكتروني مستخدم مسبقاً");
+  return normalizedEmail;
+};
+
+const emptyStringToNull = (value) => (value === "" ? null : value);
+
 // ── PROFILE ───────────────────────────────────────────────
 const getAdminProfile = async (userId) => {
   const user  = await User.findById(userId);
@@ -126,6 +149,51 @@ const getInstructorById = async (id) => {
   return inst;
 };
 
+const updateInstructor = async (id, updates) => {
+  const instructor = await Instructor.findById(id);
+  if (!instructor) throw new ApiError(404, "المدرس غير موجود");
+
+  const userData = pickFields(updates, [
+    "firstName",
+    "secondName",
+    "familyName",
+    "profileImage",
+  ]);
+
+  if (updates.email !== undefined) {
+    userData.email = await ensureEmailAvailable(updates.email, instructor.userId);
+  }
+
+  const instructorData = pickFields(updates, [
+    "phoneNumber",
+    "dateOfBirth",
+    "paypalAccount",
+    "bio",
+  ]);
+
+  ["phoneNumber", "dateOfBirth", "paypalAccount"].forEach((field) => {
+    if (instructorData[field] !== undefined) {
+      instructorData[field] = emptyStringToNull(instructorData[field]);
+    }
+  });
+
+  if (Object.keys(userData).length > 0) {
+    await User.findByIdAndUpdate(instructor.userId, userData, {
+      new: true,
+      runValidators: true,
+    });
+  }
+
+  if (Object.keys(instructorData).length > 0) {
+    await Instructor.findByIdAndUpdate(id, instructorData, {
+      new: true,
+      runValidators: true,
+    });
+  }
+
+  return await getInstructorById(id);
+};
+
 const toggleInstructorStatus = async (id) => {
   const inst = await Instructor.findById(id);
   if (!inst) throw new ApiError(404, "المدرس غير موجود");
@@ -156,6 +224,48 @@ const getAllStudents = async (query) => {
     Student.countDocuments(stuFilter),
   ]);
   return { students, pagination: getPaginationMeta(total, page, limit) };
+};
+
+const updateStudent = async (id, updates) => {
+  const student = await Student.findById(id);
+  if (!student) throw new ApiError(404, "الطالب غير موجود");
+
+  const userData = pickFields(updates, [
+    "firstName",
+    "secondName",
+    "familyName",
+    "profileImage",
+  ]);
+
+  if (updates.email !== undefined) {
+    userData.email = await ensureEmailAvailable(updates.email, student.userId);
+  }
+
+  const studentData = {};
+  if (updates.universityId !== undefined) {
+    const university = await University.findById(updates.universityId);
+    if (!university) throw new ApiError(404, "الجامعة غير موجودة");
+    if (!university.isActive) throw new ApiError(400, "الجامعة المحددة غير متاحة حالياً");
+    studentData.universityId = updates.universityId;
+  }
+
+  if (Object.keys(userData).length > 0) {
+    await User.findByIdAndUpdate(student.userId, userData, {
+      new: true,
+      runValidators: true,
+    });
+  }
+
+  if (Object.keys(studentData).length > 0) {
+    await Student.findByIdAndUpdate(id, studentData, {
+      new: true,
+      runValidators: true,
+    });
+  }
+
+  return await Student.findById(id)
+    .populate("userId", "firstName secondName familyName email profileImage isActive createdAt")
+    .populate("universityId", "name city logo isActive");
 };
 
 const toggleStudentStatus = async (id) => {
@@ -489,8 +599,8 @@ const broadcastNotification = async (data) =>
 module.exports = {
   getAdminProfile, updateAdminProfile,
   createUniversity, getAllUniversities, toggleUniversityStatus, deleteUniversity,
-  createInstructor, getAllInstructors, getInstructorById, toggleInstructorStatus,
-  getAllStudents, toggleStudentStatus, applyDiscount, addMetToStudent,
+  createInstructor, getAllInstructors, getInstructorById, updateInstructor, toggleInstructorStatus,
+  getAllStudents, updateStudent, toggleStudentStatus, applyDiscount, addMetToStudent,
   createCourse, getAllCourses, getCourseDetails, assignInstructorToCourse,
   deleteCourse, getCourseStudents, removeStudentFromCourse, removeAllStudentsFromCourse,
   getPlatformStats, getInstructorPayments, releasePayment, cancelPayment,

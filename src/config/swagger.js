@@ -150,6 +150,37 @@ const options = {
       },
 
       // ── STUDENT ───────────────────────────────────────────
+      "/student/profile": {
+        get: {
+          tags: ["Student"],
+          summary: "الملف الشخصي للطالب",
+          responses: { 200: { description: "بيانات الطالب + الجامعة" } },
+        },
+        put: {
+          tags: ["Student"],
+          summary: "تعديل الملف الشخصي للطالب",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    firstName:    { type: "string" },
+                    secondName:   { type: "string" },
+                    familyName:   { type: "string" },
+                    profileImage: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "تم تحديث الملف الشخصي" },
+            400: { description: "بيانات غير صالحة أو حقول غير مسموحة" },
+          },
+        },
+      },
       "/student/dashboard": {
         get: {
           tags: ["Student"],
@@ -250,6 +281,41 @@ const options = {
       },
 
       // ── INSTRUCTOR ────────────────────────────────────────
+      "/instructor/profile": {
+        get: {
+          tags: ["Instructor"],
+          summary: "الملف الشخصي للمدرس",
+          responses: { 200: { description: "بيانات المستخدم + ملف المدرس" } },
+        },
+        put: {
+          tags: ["Instructor"],
+          summary: "تعديل الملف الشخصي للمدرس",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    firstName:     { type: "string" },
+                    secondName:    { type: "string" },
+                    familyName:    { type: "string" },
+                    profileImage:  { type: "string" },
+                    phoneNumber:   { type: "string" },
+                    dateOfBirth:   { type: "string", format: "date" },
+                    paypalAccount: { type: "string", format: "email" },
+                    bio:           { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "تم تحديث الملف الشخصي" },
+            400: { description: "بيانات غير صالحة أو حقول غير مسموحة" },
+          },
+        },
+      },
       "/instructor/dashboard": {
         get: {
           tags: ["Instructor"],
@@ -345,6 +411,39 @@ const options = {
           responses: { 200: { description: "قائمة المدرسين" } },
         },
       },
+      "/admin/instructors/{id}": {
+        patch: {
+          tags: ["Admin"],
+          summary: "تعديل بيانات مدرس",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    firstName:     { type: "string" },
+                    secondName:    { type: "string" },
+                    familyName:    { type: "string" },
+                    email:         { type: "string", format: "email" },
+                    profileImage:  { type: "string" },
+                    phoneNumber:   { type: "string" },
+                    dateOfBirth:   { type: "string", format: "date" },
+                    paypalAccount: { type: "string", format: "email" },
+                    bio:           { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "تم تحديث بيانات المدرس" },
+            404: { description: "المدرس غير موجود" },
+            409: { description: "البريد الإلكتروني مستخدم مسبقاً" },
+          },
+        },
+      },
       "/admin/courses": {
         post: {
           tags: ["Admin"],
@@ -417,6 +516,36 @@ const options = {
             { name: "universityId", in: "query", schema: { type: "string" } },
           ],
           responses: { 200: { description: "قائمة الطلاب" } },
+        },
+      },
+      "/admin/students/{id}": {
+        patch: {
+          tags: ["Admin"],
+          summary: "تعديل بيانات طالب",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    firstName:    { type: "string" },
+                    secondName:   { type: "string" },
+                    familyName:   { type: "string" },
+                    email:        { type: "string", format: "email" },
+                    profileImage: { type: "string" },
+                    universityId: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "تم تحديث بيانات الطالب" },
+            404: { description: "الطالب أو الجامعة غير موجودة" },
+            409: { description: "البريد الإلكتروني مستخدم مسبقاً" },
+          },
         },
       },
       "/admin/students/{id}/met": {
